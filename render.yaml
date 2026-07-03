@@ -1,0 +1,12 @@
+# Despliegue en Render (https://render.com) — plan gratuito.
+# Render redespliega automáticamente con cada push a la rama principal.
+# Como GitHub Actions hace commit de data/lottery.db a diario, la app
+# desplegada queda con los datos frescos sin intervención manual.
+services:
+  - type: web
+    name: loterias-colombia
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    autoDeploy: true

@@ -1,0 +1,13 @@
+# Entorno virtual (no se sube; se recrea con requirements.txt)
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Logs temporales
+server.log
+*.log
+
+# IMPORTANTE: data/lottery.db SÍ se versiona a propósito.
+# Es el histórico acumulado; GitHub Actions lo actualiza y hace commit a diario.
+# Por eso NO lo ignoramos aquí.

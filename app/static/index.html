@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Análisis de Loterías · Colombia</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+</head>
+<body>
+    <div class="aurora"></div>
+
+    <!-- Aviso permanente -->
+    <div id="disclaimer-banner" class="disclaimer-banner">
+        <span class="dot"></span>
+        <span id="disclaimer-text">Herramienta de análisis estadístico y entretenimiento. Las loterías son aleatorias: no se puede predecir el resultado.</span>
+    </div>
+
+    <header class="hero">
+        <div class="hero-inner">
+            <p class="eyebrow">Estadística · Probabilidad · Cadenas de Markov</p>
+            <h1>Análisis de Loterías <span class="accent">Colombia</span></h1>
+            <p class="subtitle">
+                Estudia los últimos <strong id="window-label">70</strong> resultados de tu lotería
+                y obtén 3 sugerencias respaldadas por el histórico.
+            </p>
+
+            <div class="control-card">
+                <div class="field">
+                    <label for="lottery-select">Elige tu lotería</label>
+                    <select id="lottery-select" aria-label="Seleccionar lotería"></select>
+                </div>
+                <div class="actions">
+                    <button id="predict-btn" class="btn btn-primary">
+                        <span class="btn-label">Obtener predicción del día</span>
+                        <span class="spinner" hidden></span>
+                    </button>
+                    <button id="refresh-btn" class="btn btn-ghost" title="Actualizar datos desde las fuentes">
+                        Actualizar datos
+                    </button>
+                </div>
+                <p id="status-line" class="status-line"></p>
+            </div>
+        </div>
+    </header>
+
+    <main id="results" class="results" hidden>
+        <!-- Las 3 sugerencias -->
+        <section class="section">
+            <h2 class="section-title">Sugerencias del día</h2>
+            <div id="suggestions" class="suggestions-grid"></div>
+        </section>
+
+        <!-- Meta -->
+        <section class="section meta-row">
+            <div class="meta-chip">Sorteos analizados: <strong id="draws-used">—</strong></div>
+            <div class="meta-chip">Último resultado: <strong id="last-draw">—</strong></div>
+        </section>
+
+        <!-- Estadísticas -->
+        <section class="section grid-2">
+            <div class="panel">
+                <h3 class="panel-title">Números calientes</h3>
+                <div id="hot-list" class="freq-list"></div>
+            </div>
+            <div class="panel">
+                <h3 class="panel-title">Números fríos</h3>
+                <div id="cold-list" class="freq-list"></div>
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="panel">
+                <h3 class="panel-title">Frecuencia de dígitos por posición</h3>
+                <p class="panel-hint">Cada barra muestra cuántas veces salió el dígito 0–9 en esa posición.</p>
+                <div id="heatmap" class="heatmap"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="footer">
+        <p id="footer-disclaimer"></p>
+        <p class="footer-credit">Proyecto de análisis de datos · uso educativo y de entretenimiento</p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
