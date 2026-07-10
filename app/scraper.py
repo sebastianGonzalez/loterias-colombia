@@ -112,21 +112,27 @@ def parse_resultadodelaloteria(html: str, lottery_slug: str) -> list[Draw]:
             if draw_date is None:
                 continue
             # El número es la última celda con 4 dígitos; se descarta el año de la
-            # fecha larga para no confundirlo con el resultado.
+            # fecha larga para no confundirlo con el resultado. Además se captura el
+            # texto extra que sigue al número (Serie NNN / signo zodiacal).
             number = None
+            extra = ""
             for c in reversed(cells):
                 cleaned = c.replace(str(draw_date.year), " ")
                 m = _NUM4_RE.search(cleaned)
                 if m:
                     number = m.group(1)
+                    # Texto tras las 4 cifras dentro de la misma celda -> dato extra.
+                    tail = cleaned[m.end():].strip(" -–—\t")
+                    extra = re.sub(r"\s+", " ", tail).strip()
                     break
             if not number:
                 continue
+            serialized = f"{number}#{extra}" if extra else number
             draws.append(
                 Draw(
                     lottery=lottery_slug,
                     draw_date=draw_date,
-                    numbers=number,
+                    numbers=serialized,
                     source=SOURCE_RESULTADO,
                 )
             )

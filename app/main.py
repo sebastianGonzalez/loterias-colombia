@@ -40,6 +40,7 @@ def list_lotteries() -> dict:
                 "group": lot.group,
                 "kind": lot.kind,
                 "draw_days": lot.draw_days,
+                "extra_label": lot.extra_label,
                 "stored": db.count_draws(slug),
             }
         )
@@ -55,6 +56,20 @@ def refresh_lottery(lottery: str) -> dict:
         return scraper.refresh(lottery)
     except Exception as exc:  # noqa: BLE001 - se reporta el error al cliente
         raise HTTPException(status_code=502, detail=f"Error al actualizar: {exc}")
+
+
+@app.post("/api/refresh-all")
+def refresh_all_lotteries() -> dict:
+    """Actualiza TODAS las loterías del catálogo. Puede tardar (son ~28)."""
+    results = scraper.refresh_all()
+    total_inserted = sum(r.get("inserted", 0) for r in results)
+    errors = [r["lottery"] for r in results if "error" in r]
+    return {
+        "total_inserted": total_inserted,
+        "lotteries_updated": len(results) - len(errors),
+        "errors": errors,
+        "results": results,
+    }
 
 
 @app.get("/api/predict/{lottery}")

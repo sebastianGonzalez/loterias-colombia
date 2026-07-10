@@ -29,7 +29,13 @@ const els = {
   statsBaloto: $("#stats-baloto"),
   ballsGrid: $("#balls-grid"),
   superGrid: $("#super-grid"),
+  search: $("#lottery-search"),
+  searchEmpty: $("#search-empty"),
+  refreshAllBtn: $("#refresh-all-btn"),
 };
+
+// Catálogo completo en memoria (para filtrar sin volver a pedir al servidor).
+let allLotteries = [];
 
 const POSITION_LABELS = ["Millar", "Centena", "Decena", "Unidad"];
 
@@ -54,26 +60,47 @@ async function loadLotteries() {
       els.disclaimerText.textContent = data.disclaimer;
       els.footerDisclaimer.textContent = data.disclaimer;
     }
-    // Agrupar por familia en optgroups.
-    const groups = {};
-    for (const lot of data.lotteries) {
-      (groups[lot.group] = groups[lot.group] || []).push(lot);
-    }
-    els.select.innerHTML = "";
-    for (const [group, items] of Object.entries(groups)) {
-      const og = document.createElement("optgroup");
-      og.label = group;
-      for (const lot of items) {
-        const opt = document.createElement("option");
-        opt.value = lot.slug;
-        opt.textContent = `${lot.name} (${lot.stored} sorteos)`;
-        og.appendChild(opt);
-      }
-      els.select.appendChild(og);
-    }
+    allLotteries = data.lotteries;
+    renderSelect();
   } catch (err) {
     setStatus("No se pudo cargar el catálogo de loterías.", "error");
   }
+}
+
+// Dibuja el <select> agrupado, aplicando el texto de búsqueda como filtro.
+function renderSelect() {
+  const q = (els.search.value || "").trim().toLowerCase();
+  const prev = els.select.value;
+  const matches = allLotteries.filter(
+    (lot) =>
+      !q ||
+      lot.name.toLowerCase().includes(q) ||
+      lot.group.toLowerCase().includes(q)
+  );
+
+  const groups = {};
+  for (const lot of matches) {
+    (groups[lot.group] = groups[lot.group] || []).push(lot);
+  }
+  els.select.innerHTML = "";
+  for (const [group, items] of Object.entries(groups)) {
+    const og = document.createElement("optgroup");
+    og.label = group;
+    for (const lot of items) {
+      const opt = document.createElement("option");
+      opt.value = lot.slug;
+      opt.textContent = `${lot.name} (${lot.stored} sorteos)`;
+      og.appendChild(opt);
+    }
+    els.select.appendChild(og);
+  }
+
+  // Conservar selección previa si sigue visible.
+  if (matches.some((l) => l.slug === prev)) els.select.value = prev;
+  els.searchEmpty.hidden = matches.length > 0;
+  // Con búsqueda activa, mostrar varias filas para facilitar la elección.
+  const nGroups = Object.keys(groups).length;
+  els.select.size = q && matches.length > 1 ? Math.min(matches.length + nGroups, 10) : 1;
 }
 
 async function refreshData() {
@@ -143,7 +170,9 @@ function render(data) {
 
   // --- Meta ---
   els.drawsUsed.textContent = data.draws_used;
-  els.lastDraw.textContent = data.last_draw || "—";
+  let lastTxt = data.last_draw || "—";
+  if (data.last_extra) lastTxt += ` · ${data.last_extra}`;
+  els.lastDraw.textContent = lastTxt;
   if (data.draw_days) {
     els.drawDays.textContent = data.draw_days;
     els.daysChip.hidden = false;
@@ -226,7 +255,33 @@ function renderHeatmap(positionStats) {
   }
 }
 
+async function refreshAll() {
+  setLoading(true);
+  els.refreshAllBtn.disabled = true;
+  setStatus("Actualizando todas las loterías… esto puede tardar un poco.");
+  try {
+    const res = await fetch("/api/refresh-all", { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "Error al actualizar");
+    const errTxt = data.errors.length ? ` · ${data.errors.length} con error` : "";
+    setStatus(
+      `Listo: ${data.total_inserted} sorteos nuevos en ${data.lotteries_updated} loterías${errTxt}.`,
+      "ok"
+    );
+    const prev = els.select.value;
+    await loadLotteries();
+    if (prev) els.select.value = prev;
+  } catch (err) {
+    setStatus(err.message || "Error al actualizar todas.", "error");
+  } finally {
+    els.refreshAllBtn.disabled = false;
+    setLoading(false);
+  }
+}
+
 els.predictBtn.addEventListener("click", predict);
 els.refreshBtn.addEventListener("click", refreshData);
+els.refreshAllBtn.addEventListener("click", refreshAll);
+els.search.addEventListener("input", renderSelect);
 
 loadLotteries();

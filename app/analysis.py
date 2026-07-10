@@ -216,7 +216,7 @@ def _analyze_cifras4(
 ) -> PredictionResult:
     draws_used = len(draws)
 
-    number_counter = Counter(d.numbers for d in draws)
+    number_counter = Counter(d.main4 for d in draws)
     hot = number_counter.most_common(5)
     cold = sorted(number_counter.items(), key=lambda kv: (kv[1], kv[0]))[:5]
 
@@ -247,7 +247,7 @@ def _analyze_cifras4(
             method="Cadena de Markov posicional",
             rationale=(
                 "Para cada posición se toma el dígito con mayor probabilidad de "
-                f"suceder al último resultado ({draws[0].numbers}) según la matriz "
+                f"suceder al último resultado ({draws[0].main4}) según la matriz "
                 "de transición del histórico."
             ),
             score=round(sum(markov_conf) / DIGITS, 4),
@@ -295,9 +295,11 @@ def _analyze_cifras4(
         kind="cifras4",
         draws_used=draws_used,
         suggestions=suggestions,
-        last_draw=draws[0].numbers,
+        last_draw=draws[0].main4,
         disclaimer="",
         draw_days=draw_days,
+        last_extra=draws[0].extra,
+        extra_label=(get_lottery(slug).extra_label if get_lottery(slug) else ""),
         hot_numbers=[(n, c) for n, c in hot],
         cold_numbers=[(n, c) for n, c in cold],
         position_stats=position_stats,

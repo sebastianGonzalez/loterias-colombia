@@ -29,16 +29,23 @@
 
             <div class="control-card">
                 <div class="field">
-                    <label for="lottery-select">Elige tu lotería</label>
-                    <select id="lottery-select" aria-label="Seleccionar lotería"></select>
+                    <label for="lottery-search">Elige tu lotería</label>
+                    <input id="lottery-search" type="search" class="search-input"
+                           placeholder="Buscar lotería… (ej. Baloto, Bogotá, Astro)"
+                           aria-label="Buscar lotería" autocomplete="off">
+                    <select id="lottery-select" size="1" aria-label="Seleccionar lotería"></select>
+                    <p id="search-empty" class="panel-hint" hidden>Sin coincidencias.</p>
                 </div>
                 <div class="actions">
                     <button id="predict-btn" class="btn btn-primary">
                         <span class="btn-label">Obtener predicción del día</span>
                         <span class="spinner" hidden></span>
                     </button>
-                    <button id="refresh-btn" class="btn btn-ghost" title="Actualizar datos desde las fuentes">
+                    <button id="refresh-btn" class="btn btn-ghost" title="Actualizar esta lotería desde las fuentes">
                         Actualizar datos
+                    </button>
+                    <button id="refresh-all-btn" class="btn btn-ghost" title="Actualizar todas las loterías (puede tardar)">
+                        Actualizar todas
                     </button>
                 </div>
                 <p id="status-line" class="status-line"></p>

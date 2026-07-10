@@ -21,9 +21,19 @@ class Draw(BaseModel):
     source: str = ""
 
     @property
+    def main4(self) -> str:
+        """Las 4 cifras principales (parte previa al separador '#')."""
+        return self.numbers.split("#", 1)[0]
+
+    @property
+    def extra(self) -> str:
+        """Dato informativo extra: 'Serie 463', 'Virgo', etc. Vacío si no hay."""
+        return self.numbers.split("#", 1)[1] if "#" in self.numbers else ""
+
+    @property
     def digits(self) -> list[int]:
-        """Los dígitos como enteros (solo válido para loterías de 4 cifras)."""
-        return [int(c) for c in self.numbers if c.isdigit()]
+        """Los dígitos de las 4 cifras principales (loterías de 4 cifras)."""
+        return [int(c) for c in self.main4 if c.isdigit()]
 
     def baloto_parts(self) -> tuple[list[int], int | None]:
         """Devuelve (balotas principales, súper balota) para Baloto."""
@@ -71,6 +81,8 @@ class PredictionResult(BaseModel):
     last_draw: str | None
     disclaimer: str
     draw_days: str = ""                    # informativo (ej. "Lun, Mié, Sáb")
+    last_extra: str = ""                   # serie/signo del último sorteo
+    extra_label: str = ""                  # etiqueta del dato extra ("Serie"/"Signo")
 
     # --- Solo para 4 cifras ---
     hot_numbers: list[tuple[str, int]] = []

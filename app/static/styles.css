@@ -348,6 +348,23 @@ select:focus { outline: none; border-color: var(--accent); }
 .footer p { font-size: 0.82rem; color: var(--text-faint); }
 .footer-credit { margin-top: 8px; opacity: 0.7; }
 
+/* Buscador de loterías */
+.search-input {
+    width: 100%;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface-2, rgba(255,255,255,0.04));
+    color: inherit;
+    font-size: 0.95rem;
+}
+.search-input:focus {
+    outline: none;
+    border-color: var(--accent-2, #7c5cff);
+    box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.25);
+}
+
 /* Balotas (Baloto) */
 .balls-grid {
     display: grid;

@@ -64,3 +64,15 @@ def test_baloto_numbers_roundtrip(tmp_path):
     main, sup = got.baloto_parts()
     assert main == [2, 12, 16, 27, 28]
     assert sup == 12
+
+
+def test_extra_serie_and_signo_roundtrip(tmp_path):
+    dbp = tmp_path / "t.db"
+    db.init_db(dbp)
+    db.upsert_draw(_draw(1, "0554#Serie 463", "loteria-de-bogota"), dbp)
+    db.upsert_draw(_draw(1, "9423#Virgo", "astro-sol"), dbp)
+    bog = db.get_last_n("loteria-de-bogota", 1, dbp)[0]
+    astro = db.get_last_n("astro-sol", 1, dbp)[0]
+    assert bog.main4 == "0554" and bog.extra == "Serie 463"
+    assert astro.main4 == "9423" and astro.extra == "Virgo"
+    assert bog.digits == [0, 5, 5, 4]

@@ -33,6 +33,7 @@ class Lottery:
     group: str
     kind: str = KIND_CIFRAS4
     draw_days: str = "Todos los días"
+    extra_label: str = ""  # etiqueta del dato extra: "Serie", "Signo" o "" (ninguno)
     source_slugs: dict[str, str] = field(default_factory=dict)
 
 
@@ -83,6 +84,50 @@ LOTTERIES: dict[str, Lottery] = {
                              source_slugs=_r("motilon-tarde")),
     "pijao-de-oro": Lottery("pijao-de-oro", "Pijao de Oro", "Otras",
                             source_slugs=_r("pijao-de-oro")),
+    # --- Astro (4 cifras + signo zodiacal, diario) ---
+    "astro-sol": Lottery("astro-sol", "Astro Sol", "Astro",
+                         draw_days="Todos los días", extra_label="Signo",
+                         source_slugs=_r("astro-sol")),
+    "astro-luna": Lottery("astro-luna", "Astro Luna", "Astro",
+                          draw_days="Todos los días", extra_label="Signo",
+                          source_slugs=_r("astro-luna")),
+    # --- Loterías tradicionales (4 cifras + Serie, juego semanal) ---
+    "loteria-de-bogota": Lottery("loteria-de-bogota", "Lotería de Bogotá",
+                                 "Loterías tradicionales", draw_days="Jueves",
+                                 extra_label="Serie", source_slugs=_r("loteria-de-bogota")),
+    "loteria-de-cundinamarca": Lottery("loteria-de-cundinamarca", "Lotería de Cundinamarca",
+                                       "Loterías tradicionales", draw_days="Lunes",
+                                       extra_label="Serie", source_slugs=_r("loteria-de-cundinamarca")),
+    "loteria-del-tolima": Lottery("loteria-del-tolima", "Lotería del Tolima",
+                                  "Loterías tradicionales", draw_days="Lunes",
+                                  extra_label="Serie", source_slugs=_r("loteria-del-tolima")),
+    "loteria-del-huila": Lottery("loteria-del-huila", "Lotería del Huila",
+                                 "Loterías tradicionales", draw_days="Martes",
+                                 extra_label="Serie", source_slugs=_r("loteria-del-huila")),
+    "loteria-del-meta": Lottery("loteria-del-meta", "Lotería del Meta",
+                                "Loterías tradicionales", draw_days="Miércoles",
+                                extra_label="Serie", source_slugs=_r("loteria-del-meta")),
+    "loteria-de-manizales": Lottery("loteria-de-manizales", "Lotería de Manizales",
+                                    "Loterías tradicionales", draw_days="Miércoles",
+                                    extra_label="Serie", source_slugs=_r("loteria-de-manizales")),
+    "loteria-del-quindio": Lottery("loteria-del-quindio", "Lotería del Quindío",
+                                   "Loterías tradicionales", draw_days="Jueves",
+                                   extra_label="Serie", source_slugs=_r("loteria-del-quindio")),
+    "loteria-de-santander": Lottery("loteria-de-santander", "Lotería de Santander",
+                                    "Loterías tradicionales", draw_days="Viernes",
+                                    extra_label="Serie", source_slugs=_r("loteria-de-santander")),
+    "loteria-de-medellin": Lottery("loteria-de-medellin", "Lotería de Medellín",
+                                   "Loterías tradicionales", draw_days="Viernes",
+                                   extra_label="Serie", source_slugs=_r("loteria-de-medellin")),
+    "loteria-del-cauca": Lottery("loteria-del-cauca", "Lotería del Cauca",
+                                 "Loterías tradicionales", draw_days="Sábado",
+                                 extra_label="Serie", source_slugs=_r("loteria-del-cauca")),
+    "loteria-de-boyaca": Lottery("loteria-de-boyaca", "Lotería de Boyacá",
+                                 "Loterías tradicionales", draw_days="Sábado",
+                                 extra_label="Serie", source_slugs=_r("loteria-de-boyaca")),
+    "loteria-de-la-cruz-roja": Lottery("loteria-de-la-cruz-roja", "Lotería Cruz Roja",
+                                       "Loterías tradicionales", draw_days="Martes",
+                                       extra_label="Serie", source_slugs=_r("loteria-de-la-cruz-roja")),
     # --- Baloto (formato distinto) ---
     "baloto": Lottery("baloto", "Baloto", "Baloto",
                       kind=KIND_BALOTO, draw_days="Lun, Mié, Sáb",

@@ -4,10 +4,16 @@ Aplicación web que estudia los resultados históricos de loterías colombianas 
 **3 sugerencias del día** por lotería, respaldadas por estadística, frecuencias y
 **cadenas de Markov**. Soporta dos formatos:
 
-- **Loterías de 4 cifras** (Dorado, Chontico, Sinuano, Paisita, Caribeña, Motilón,
+- **Chances de 4 cifras** (Dorado, Chontico, Sinuano, Paisita, Caribeña, Motilón,
   Pijao de Oro): análisis por número completo y por posición de dígito + Markov.
+- **Astro** (Sol y Luna): 4 cifras + signo zodiacal (informativo).
+- **Loterías tradicionales** (Bogotá, Cundinamarca, Tolima, Huila, Meta, Manizales,
+  Quindío, Santander, Medellín, Cauca, Boyacá, Cruz Roja): 4 cifras + Serie (informativa).
 - **Baloto** (5 balotas 1–43 + Súper Balota 1–16, juega Lun/Mié/Sáb): frecuencia de
   balotas y 3 tiquetes sugeridos.
+
+Son **28 loterías** en total. El buscador filtra la lista y el botón *Actualizar todas*
+refresca el histórico de todas de una vez.
 
 > ⚠️ **Aviso importante.** Las loterías son juegos de azar: cada sorteo es
 > independiente y aleatorio. **Ningún análisis puede predecir el resultado futuro ni
@@ -64,6 +70,7 @@ en "Sorteos analizados") y sigue creciendo con la actualización diaria automát
 |--------|------|-------------|
 | GET  | `/api/lotteries` | Catálogo de loterías + nº de sorteos almacenados |
 | POST | `/api/refresh/{lottery}` | Raspa las fuentes y actualiza el histórico |
+| POST | `/api/refresh-all` | Actualiza todas las loterías de una vez |
 | GET  | `/api/predict/{lottery}` | Analiza últimos 70 y devuelve 3 sugerencias + stats |
 
 ## Cómo funciona el análisis (`app/analysis.py`)
