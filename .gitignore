@@ -8,6 +8,6 @@ __pycache__/
 server.log
 *.log
 
-# IMPORTANTE: data/lottery.db SÍ se versiona a propósito.
-# Es el histórico acumulado; GitHub Actions lo actualiza y hace commit a diario.
-# Por eso NO lo ignoramos aquí.
+# La base de datos ahora vive en Postgres (persistente) en producción.
+# El SQLite local es solo para desarrollo/tests y NO se versiona.
+data/lottery.db

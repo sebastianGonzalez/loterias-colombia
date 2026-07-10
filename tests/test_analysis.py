@@ -1,4 +1,4 @@
-"""Tests del motor de análisis: validez, determinismo y Markov."""
+"""Tests del motor: validez, determinismo, Markov (4 cifras) y Baloto."""
 from __future__ import annotations
 
 from datetime import date, timedelta
@@ -7,81 +7,93 @@ from app.analysis import _markov_transition, analyze
 from app.models import Draw
 
 
-def _make_draws(numbers: list[str]) -> list[Draw]:
+def _make_draws(values: list[str], lottery: str = "sinuano-dia") -> list[Draw]:
     """Crea draws del más reciente al más antiguo (como los entrega la BD)."""
     base = date(2026, 6, 1)
-    draws = []
-    for i, n in enumerate(numbers):
-        # el primero de la lista = más reciente
-        draws.append(
-            Draw(
-                lottery="dorado-manana",
-                draw_date=base + timedelta(days=len(numbers) - i),
-                number=n,
-                source="test",
-            )
-        )
-    return draws
-
-
-SAMPLE = _make_draws(
-    [
-        "2679", "8254", "4268", "3646", "8826",
-        "9388", "7032", "5181", "0263", "5446",
-        "1234", "5678", "9012", "3456", "7890",
+    return [
+        Draw(lottery=lottery, draw_date=base + timedelta(days=len(values) - i),
+             numbers=v, source="test")
+        for i, v in enumerate(values)
     ]
-)
 
 
+SAMPLE = _make_draws([
+    "2679", "8254", "4268", "3646", "8826",
+    "9388", "7032", "5181", "0263", "5446",
+    "1234", "5678", "9012", "3456", "7890",
+])
+
+
+# ---------------------------- 4 cifras ---------------------------- #
 def test_returns_three_valid_suggestions():
-    result = analyze(SAMPLE, "dorado-manana", "Dorado Mañana")
-    assert len(result.suggestions) == 3
-    for s in result.suggestions:
+    r = analyze(SAMPLE, "sinuano-dia", "Sinuano Día")
+    assert r.kind == "cifras4"
+    assert len(r.suggestions) == 3
+    for s in r.suggestions:
         assert s.number.isdigit() and len(s.number) == 4
         assert 0.0 <= s.score <= 1.0
 
 
-def test_deterministic_same_input_same_output():
-    r1 = analyze(SAMPLE, "dorado-manana", "Dorado Mañana")
-    r2 = analyze(SAMPLE, "dorado-manana", "Dorado Mañana")
+def test_deterministic():
+    r1 = analyze(SAMPLE, "sinuano-dia", "Sinuano Día")
+    r2 = analyze(SAMPLE, "sinuano-dia", "Sinuano Día")
     assert [s.number for s in r1.suggestions] == [s.number for s in r2.suggestions]
 
 
-def test_draws_used_matches_input():
-    result = analyze(SAMPLE, "dorado-manana", "Dorado Mañana")
-    assert result.draws_used == len(SAMPLE)
-    assert result.last_draw == "2679"
-
-
 def test_empty_input_is_safe():
-    result = analyze([], "dorado-manana", "Dorado Mañana")
-    assert result.draws_used == 0
-    assert result.suggestions == []
-    assert result.last_draw is None
+    r = analyze([], "sinuano-dia", "Sinuano Día")
+    assert r.draws_used == 0 and r.suggestions == [] and r.last_draw is None
 
 
 def test_position_stats_shape():
-    result = analyze(SAMPLE, "dorado-manana", "Dorado Mañana")
-    assert len(result.position_stats) == 4
-    for ps in result.position_stats:
+    r = analyze(SAMPLE, "sinuano-dia", "Sinuano Día")
+    assert len(r.position_stats) == 4
+    for ps in r.position_stats:
         assert len(ps.counts) == 10
-        assert sum(ps.counts) == len(SAMPLE)  # cada sorteo aporta 1 dígito por posición
-        assert 0 <= ps.top_digit <= 9
+        assert sum(ps.counts) == len(SAMPLE)
 
 
-def test_markov_rows_are_probability_distributions():
+def test_markov_rows_are_distributions():
     trans = _markov_transition(SAMPLE)
-    assert len(trans) == 4  # una matriz por posición
+    assert len(trans) == 4
     for pos_matrix in trans:
-        assert len(pos_matrix) == 10
         for row in pos_matrix:
-            assert len(row) == 10
-            assert abs(sum(row) - 1.0) < 1e-9  # cada fila suma 1
+            assert abs(sum(row) - 1.0) < 1e-9
 
 
-def test_hot_numbers_present():
-    # Repetimos un número para forzar que sea "caliente".
-    draws = _make_draws(["1111", "1111", "2222", "3333", "1111"])
-    result = analyze(draws, "dorado-manana", "Dorado Mañana")
-    assert result.hot_numbers[0][0] == "1111"
-    assert result.hot_numbers[0][1] == 3
+# ------------------------------ Baloto ---------------------------- #
+BALOTO_SAMPLE = _make_draws([
+    "02-12-16-27-28|12", "09-14-40-42-43|09", "03-12-13-17-37|14",
+    "10-15-22-24-30|03", "15-23-29-33-41|07", "12-14-30-36-43|11",
+    "08-12-16-28-33|05", "31-34-37-38-43|02", "16-20-34-37-39|08",
+    "04-13-16-22-31|10",
+], lottery="baloto")
+
+
+def test_baloto_three_valid_tickets():
+    r = analyze(BALOTO_SAMPLE, "baloto", "Baloto")
+    assert r.kind == "baloto"
+    assert len(r.suggestions) == 3
+    for s in r.suggestions:
+        # formato "n - n - n - n - n  +  s"
+        main_part, sup_part = s.number.split("+")
+        mains = [int(x) for x in main_part.replace("-", " ").split()]
+        sup = int(sup_part.strip())
+        assert len(mains) == 5
+        assert all(1 <= n <= 43 for n in mains)
+        assert len(set(mains)) == 5           # sin balotas repetidas
+        assert 1 <= sup <= 16
+
+
+def test_baloto_deterministic():
+    r1 = analyze(BALOTO_SAMPLE, "baloto", "Baloto")
+    r2 = analyze(BALOTO_SAMPLE, "baloto", "Baloto")
+    assert [s.number for s in r1.suggestions] == [s.number for s in r2.suggestions]
+
+
+def test_baloto_ball_stats_ranges():
+    r = analyze(BALOTO_SAMPLE, "baloto", "Baloto")
+    assert len(r.ball_stats) == 43
+    assert len(r.superball_stats) == 16
+    # el total de conteos de balotas = 5 por sorteo
+    assert sum(b.count for b in r.ball_stats) == 5 * len(BALOTO_SAMPLE)

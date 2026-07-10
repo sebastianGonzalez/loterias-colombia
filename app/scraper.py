@@ -28,6 +28,7 @@ except Exception:  # pragma: no cover - si no está, se usa el bundle por defect
 
 from . import db
 from .config import (
+    KIND_BALOTO,
     SOURCE_COLOMBIA,
     SOURCE_RESULTADO,
     Lottery,
@@ -46,6 +47,13 @@ _TIMEOUT = httpx.Timeout(20.0)
 _DATE_RE = re.compile(r"(\d{2})/(\d{2})/(\d{4})")
 _NUM4_RE = re.compile(r"\b(\d{4})\b")
 
+_MESES = {
+    "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, "mayo": 5, "junio": 6,
+    "julio": 7, "agosto": 8, "septiembre": 9, "setiembre": 9, "octubre": 10,
+    "noviembre": 11, "diciembre": 12,
+}
+_LONG_DATE_RE = re.compile(r"(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})", re.IGNORECASE)
+
 
 def _parse_ddmmyyyy(text: str) -> date | None:
     m = _DATE_RE.search(text)
@@ -54,6 +62,22 @@ def _parse_ddmmyyyy(text: str) -> date | None:
     d, mo, y = (int(g) for g in m.groups())
     try:
         return date(y, mo, d)
+    except ValueError:
+        return None
+
+
+def _parse_long_date(text: str) -> date | None:
+    """Fecha larga en español: '6 de julio de 2026' -> date."""
+    m = _LONG_DATE_RE.search(text)
+    if not m:
+        return None
+    day = int(m.group(1))
+    mon = _MESES.get(m.group(2).lower())
+    yr = int(m.group(3))
+    if not mon:
+        return None
+    try:
+        return date(yr, mon, day)
     except ValueError:
         return None
 
@@ -83,13 +107,16 @@ def parse_resultadodelaloteria(html: str, lottery_slug: str) -> list[Draw]:
             if len(cells) < 3:
                 continue
             row_text = " ".join(cells)
-            draw_date = _parse_ddmmyyyy(row_text)
+            # La fecha puede venir como DD/MM/YYYY o larga ("8 de julio de 2026").
+            draw_date = _parse_ddmmyyyy(row_text) or _parse_long_date(row_text)
             if draw_date is None:
                 continue
-            # El número es la última celda con 4 dígitos.
+            # El número es la última celda con 4 dígitos; se descarta el año de la
+            # fecha larga para no confundirlo con el resultado.
             number = None
             for c in reversed(cells):
-                m = _NUM4_RE.search(c)
+                cleaned = c.replace(str(draw_date.year), " ")
+                m = _NUM4_RE.search(cleaned)
                 if m:
                     number = m.group(1)
                     break
@@ -99,12 +126,53 @@ def parse_resultadodelaloteria(html: str, lottery_slug: str) -> list[Draw]:
                 Draw(
                     lottery=lottery_slug,
                     draw_date=draw_date,
-                    number=number,
+                    numbers=number,
                     source=SOURCE_RESULTADO,
                 )
             )
         if draws:
             break
+    return draws
+
+
+def parse_baloto(html: str, lottery_slug: str) -> list[Draw]:
+    """Parser de Baloto en resultadodelaloteria.com.
+
+    Estructura: tabla '# Sorteo | Fecha (larga) | Resultado', donde cada resultado
+    trae 5 balotas principales (elemento .res-txt) y la súper balota como último
+    número del bloque. Se serializa como "b1-b2-b3-b4-b5|super".
+    """
+    soup = BeautifulSoup(html, "html.parser")
+    draws: list[Draw] = []
+    for tr in soup.find_all("tr"):
+        res_el = tr.select_one(".res-txt")
+        if res_el is None:
+            continue
+        row_text = tr.get_text(" ", strip=True)
+        draw_date = _parse_long_date(row_text) or _parse_ddmmyyyy(row_text)
+        if draw_date is None:
+            continue
+        # Todos los números 1-2 dígitos del bloque de resultado, en orden.
+        nums = [int(x) for x in re.findall(r"\d{1,2}", res_el.get_text(" ", strip=True))]
+        if len(nums) < 6:
+            continue
+        main = nums[:5]
+        # La súper balota es el 6º número (o el marcado como .res-super si existe).
+        sup_el = tr.select_one(".res-super")
+        if sup_el is not None:
+            sup_digits = re.findall(r"\d{1,2}", sup_el.get_text(" ", strip=True))
+            sup = int(sup_digits[0]) if sup_digits else nums[5]
+        else:
+            sup = nums[5]
+        serialized = "-".join(f"{n:02d}" for n in main) + f"|{sup:02d}"
+        draws.append(
+            Draw(
+                lottery=lottery_slug,
+                draw_date=draw_date,
+                numbers=serialized,
+                source=SOURCE_RESULTADO,
+            )
+        )
     return draws
 
 
@@ -117,12 +185,6 @@ def parse_colombia(html: str, lottery_slug: str) -> list[Draw]:
     soup = BeautifulSoup(html, "html.parser")
     text_blocks = soup.find_all(["article", "li", "div", "tr"])
     draws: list[Draw] = []
-    meses = {
-        "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, "mayo": 5, "junio": 6,
-        "julio": 7, "agosto": 8, "septiembre": 9, "octubre": 10,
-        "noviembre": 11, "diciembre": 12,
-    }
-    long_date_re = re.compile(r"(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})", re.IGNORECASE)
     seen: set[str] = set()
     for block in text_blocks:
         txt = block.get_text(" ", strip=True)
@@ -130,19 +192,10 @@ def parse_colombia(html: str, lottery_slug: str) -> list[Draw]:
             continue
 
         # Detectar y extraer la fecha (larga o DD/MM/YYYY).
-        d = _parse_ddmmyyyy(txt)
-        lm = long_date_re.search(txt)
-        if d is None and lm:
-            day = int(lm.group(1))
-            mon = meses.get(lm.group(2).lower())
-            yr = int(lm.group(3))
-            if mon:
-                try:
-                    d = date(yr, mon, day)
-                except ValueError:
-                    d = None
+        d = _parse_ddmmyyyy(txt) or _parse_long_date(txt)
         if d is None:
             continue
+        lm = _LONG_DATE_RE.search(txt)
 
         # Quitar del texto la fecha (y el año) antes de buscar el número ganador,
         # para no confundir el año (p. ej. "2026") con el resultado de 4 cifras.
@@ -164,7 +217,7 @@ def parse_colombia(html: str, lottery_slug: str) -> list[Draw]:
             Draw(
                 lottery=lottery_slug,
                 draw_date=d,
-                number=num_m.group(1),
+                numbers=num_m.group(1),
                 source=SOURCE_COLOMBIA,
             )
         )
@@ -189,6 +242,11 @@ def scrape_source(lottery: Lottery, source: str) -> list[Draw]:
         return []
     url_tpl, parser = _PARSERS[source]
     url = url_tpl.format(slug=lottery.source_slugs[source])
+    # Baloto tiene formato propio: usar su parser específico (solo fuente principal).
+    if lottery.kind == KIND_BALOTO:
+        if source != SOURCE_RESULTADO:
+            return []
+        parser = parse_baloto
     try:
         html = _fetch(url)
     except (httpx.HTTPError, httpx.TimeoutException):

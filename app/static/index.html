@@ -57,27 +57,47 @@
         <section class="section meta-row">
             <div class="meta-chip">Sorteos analizados: <strong id="draws-used">—</strong></div>
             <div class="meta-chip">Último resultado: <strong id="last-draw">—</strong></div>
+            <div class="meta-chip" id="days-chip" hidden>Días de juego: <strong id="draw-days">—</strong></div>
         </section>
 
-        <!-- Estadísticas -->
-        <section class="section grid-2">
-            <div class="panel">
-                <h3 class="panel-title">Números calientes</h3>
-                <div id="hot-list" class="freq-list"></div>
-            </div>
-            <div class="panel">
-                <h3 class="panel-title">Números fríos</h3>
-                <div id="cold-list" class="freq-list"></div>
-            </div>
-        </section>
+        <!-- Estadísticas: loterías de 4 cifras -->
+        <div id="stats-cifras4">
+            <section class="section grid-2">
+                <div class="panel">
+                    <h3 class="panel-title">Números calientes</h3>
+                    <div id="hot-list" class="freq-list"></div>
+                </div>
+                <div class="panel">
+                    <h3 class="panel-title">Números fríos</h3>
+                    <div id="cold-list" class="freq-list"></div>
+                </div>
+            </section>
 
-        <section class="section">
-            <div class="panel">
-                <h3 class="panel-title">Frecuencia de dígitos por posición</h3>
-                <p class="panel-hint">Cada barra muestra cuántas veces salió el dígito 0–9 en esa posición.</p>
-                <div id="heatmap" class="heatmap"></div>
-            </div>
-        </section>
+            <section class="section">
+                <div class="panel">
+                    <h3 class="panel-title">Frecuencia de dígitos por posición</h3>
+                    <p class="panel-hint">Cada barra muestra cuántas veces salió el dígito 0–9 en esa posición.</p>
+                    <div id="heatmap" class="heatmap"></div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Estadísticas: Baloto -->
+        <div id="stats-baloto" hidden>
+            <section class="section">
+                <div class="panel">
+                    <h3 class="panel-title">Frecuencia de balotas (1–43)</h3>
+                    <p class="panel-hint">Intensidad según cuántas veces ha salido cada balota en la ventana analizada.</p>
+                    <div id="balls-grid" class="balls-grid"></div>
+                </div>
+            </section>
+            <section class="section">
+                <div class="panel">
+                    <h3 class="panel-title">Frecuencia de la Súper Balota (1–16)</h3>
+                    <div id="super-grid" class="balls-grid super"></div>
+                </div>
+            </section>
+        </div>
     </main>
 
     <footer class="footer">

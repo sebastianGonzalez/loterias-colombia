@@ -23,6 +23,12 @@ const els = {
   footerDisclaimer: $("#footer-disclaimer"),
   spinner: $("#predict-btn .spinner"),
   btnLabel: $("#predict-btn .btn-label"),
+  daysChip: $("#days-chip"),
+  drawDays: $("#draw-days"),
+  statsCifras4: $("#stats-cifras4"),
+  statsBaloto: $("#stats-baloto"),
+  ballsGrid: $("#balls-grid"),
+  superGrid: $("#super-grid"),
 };
 
 const POSITION_LABELS = ["Millar", "Centena", "Decena", "Unidad"];
@@ -117,9 +123,10 @@ function render(data) {
   // --- Sugerencias ---
   els.suggestions.innerHTML = "";
   const maxScore = Math.max(...data.suggestions.map((s) => s.score), 0.0001);
+  const cardKind = data.kind === "baloto" ? " baloto" : "";
   data.suggestions.forEach((s, i) => {
     const card = document.createElement("div");
-    card.className = "suggestion-card";
+    card.className = "suggestion-card" + cardKind;
     card.style.animationDelay = `${i * 0.08}s`;
     const pct = Math.round((s.score / maxScore) * 100);
     card.innerHTML = `
@@ -137,13 +144,41 @@ function render(data) {
   // --- Meta ---
   els.drawsUsed.textContent = data.draws_used;
   els.lastDraw.textContent = data.last_draw || "—";
+  if (data.draw_days) {
+    els.drawDays.textContent = data.draw_days;
+    els.daysChip.hidden = false;
+  } else {
+    els.daysChip.hidden = true;
+  }
 
-  // --- Calientes / fríos ---
-  renderFreq(els.hotList, data.hot_numbers, "hot");
-  renderFreq(els.coldList, data.cold_numbers, "cold");
+  // --- Estadísticas según el tipo de lotería ---
+  const isBaloto = data.kind === "baloto";
+  els.statsCifras4.hidden = isBaloto;
+  els.statsBaloto.hidden = !isBaloto;
 
-  // --- Heatmap por posición ---
-  renderHeatmap(data.position_stats);
+  if (isBaloto) {
+    renderBalls(els.ballsGrid, data.ball_stats);
+    renderBalls(els.superGrid, data.superball_stats);
+  } else {
+    renderFreq(els.hotList, data.hot_numbers, "hot");
+    renderFreq(els.coldList, data.cold_numbers, "cold");
+    renderHeatmap(data.position_stats);
+  }
+}
+
+function renderBalls(container, stats) {
+  container.innerHTML = "";
+  const max = Math.max(...stats.map((b) => b.count), 1);
+  for (const b of stats) {
+    const cell = document.createElement("div");
+    cell.className = "ball";
+    const intensity = b.count / max;
+    const alpha = 0.15 + intensity * 0.85;
+    cell.style.background = `rgba(124, 92, 255, ${alpha.toFixed(2)})`;
+    cell.innerHTML = `<span class="ball-n">${String(b.number).padStart(2, "0")}</span><span class="ball-c">${b.count}</span>`;
+    cell.title = `Balota ${b.number}: ${b.count} veces`;
+    container.appendChild(cell);
+  }
 }
 
 function renderFreq(container, items, kind) {

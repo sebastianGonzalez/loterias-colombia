@@ -1,8 +1,13 @@
 # Análisis de Loterías Colombia
 
-Aplicación web que estudia los resultados históricos de loterías colombianas de
-4 cifras (Dorado Mañana/Tarde/Noche y Chontico Día/Noche) y genera **3 sugerencias
-del día** por lotería, respaldadas por estadística, frecuencias y **cadenas de Markov**.
+Aplicación web que estudia los resultados históricos de loterías colombianas y genera
+**3 sugerencias del día** por lotería, respaldadas por estadística, frecuencias y
+**cadenas de Markov**. Soporta dos formatos:
+
+- **Loterías de 4 cifras** (Dorado, Chontico, Sinuano, Paisita, Caribeña, Motilón,
+  Pijao de Oro): análisis por número completo y por posición de dígito + Markov.
+- **Baloto** (5 balotas 1–43 + Súper Balota 1–16, juega Lun/Mié/Sáb): frecuencia de
+  balotas y 3 tiquetes sugeridos.
 
 > ⚠️ **Aviso importante.** Las loterías son juegos de azar: cada sorteo es
 > independiente y aleatorio. **Ningún análisis puede predecir el resultado futuro ni
@@ -12,9 +17,21 @@ del día** por lotería, respaldadas por estadística, frecuencias y **cadenas d
 ## Stack
 
 - **Backend:** FastAPI + Uvicorn (Python 3.12)
-- **Datos:** SQLite (se acumula día a día) + scraping con httpx + BeautifulSoup
+- **Datos:** SQLAlchemy sobre **Postgres** (producción, persistente) o **SQLite**
+  (desarrollo/tests). Scraping con httpx + BeautifulSoup.
 - **Frontend:** HTML/CSS/JS puro (sin build), servido por FastAPI
 - **Tests:** pytest
+
+### Persistencia (importante)
+
+La app elige el motor según la variable de entorno `DATABASE_URL`:
+- Si está definida → **Postgres** (el histórico se acumula y persiste de verdad).
+- Si no → **SQLite** local en `data/lottery.db` (solo desarrollo y tests).
+
+En producción, el mismo `DATABASE_URL` se configura en Render (la web) y como secret en
+GitHub Actions (el actualizador diario), de modo que ambos leen/escriben la misma base.
+Esto resuelve el problema del disco efímero de los planes gratuitos, donde el histórico
+"volvía a cero" en cada reinicio.
 
 ## Puesta en marcha
 
@@ -37,9 +54,9 @@ Abre http://127.0.0.1:8000 en el navegador.
 2. Pulsa **Actualizar datos** para poblar/actualizar el histórico desde las fuentes públicas.
 3. Pulsa **Obtener predicción del día** para ver las 3 sugerencias + estadísticas.
 
-El histórico se **acumula**: cada actualización guarda los sorteos nuevos en
-`data/lottery.db`. Al principio habrá menos de 70 sorteos; el sistema analiza los que
-tenga (lo indica en "Sorteos analizados") y va completando con el uso diario.
+El histórico se **acumula** en la base de datos de forma idempotente (sin duplicados).
+Cada fuente publica ~19 sorteos recientes; el sistema analiza los que tenga (lo indica
+en "Sorteos analizados") y sigue creciendo con la actualización diaria automática.
 
 ## Endpoints de la API
 
@@ -51,17 +68,20 @@ tenga (lo indica en "Sorteos analizados") y va completando con el uso diario.
 
 ## Cómo funciona el análisis (`app/analysis.py`)
 
-Sobre los últimos ≤70 sorteos se calcula:
-- **Frecuencia por número completo** (calientes / fríos).
-- **Frecuencia por posición** de dígito (Millar, Centena, Decena, Unidad).
-- **Cadenas de Markov por posición:** matriz de transición dígito→dígito que estima
-  el dígito siguiente más probable partiendo del último resultado.
+El motor despacha según el tipo de lotería (campo `kind`). Todo es **determinista**
+(semilla fija → misma entrada produce siempre la misma salida).
 
-Las **3 sugerencias** combinan estos enfoques de forma **determinista** (semilla fija →
-misma entrada produce siempre la misma salida):
-1. Markov posicional.
-2. Dígitos de mayor frecuencia por posición.
-3. Mezcla ponderada 50/50 de las dos anteriores.
+**Loterías de 4 cifras** — sobre los últimos ≤70 sorteos:
+- Frecuencia por número completo (calientes / fríos).
+- Frecuencia por posición de dígito (Millar, Centena, Decena, Unidad).
+- Cadenas de Markov por posición (transición dígito→dígito).
+- 3 sugerencias: (1) Markov posicional, (2) frecuencia por posición, (3) mezcla 50/50.
+
+**Baloto** — sobre los últimos ≤70 sorteos:
+- Frecuencia de cada balota (1–43) y de la súper balota (1–16).
+- 3 tiquetes: (1) las 5 más frecuentes + súper más frecuente, (2) muestreo ponderado
+  por frecuencia (reproducible), (3) tiquete balanceado por rangos (bajo/medio/alto).
+- Al ser conjuntos (no posiciones), Markov no aplica.
 
 Cada sugerencia incluye una explicación de *por qué* se propuso — nunca como promesa.
 
@@ -71,9 +91,9 @@ Cada sugerencia incluye una explicación de *por qué* se propuso — nunca como
 .venv/Scripts/python.exe -m pytest -q
 ```
 
-Cubren: inserción idempotente en SQLite, aislamiento por lotería, validez y
-determinismo de las sugerencias, y que las matrices de Markov sean distribuciones
-de probabilidad válidas.
+Cubren (14 tests): inserción idempotente, aislamiento por lotería, ida y vuelta del
+formato Baloto, validez y determinismo de las sugerencias (4 cifras y Baloto), matrices
+de Markov como distribuciones válidas, y rangos correctos de balotas.
 
 ## Ampliar
 

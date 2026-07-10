@@ -38,6 +38,8 @@ def list_lotteries() -> dict:
                 "slug": slug,
                 "name": lot.name,
                 "group": lot.group,
+                "kind": lot.kind,
+                "draw_days": lot.draw_days,
                 "stored": db.count_draws(slug),
             }
         )
