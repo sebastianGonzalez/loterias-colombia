@@ -348,22 +348,24 @@ select:focus { outline: none; border-color: var(--accent); }
 .footer p { font-size: 0.82rem; color: var(--text-faint); }
 .footer-credit { margin-top: 8px; opacity: 0.7; }
 
-/* Buscador de loterías */
+/* Buscador de loterías — combina con el <select> y lleva ícono de lupa */
 .search-input {
     width: 100%;
-    padding: 12px 14px;
-    margin-bottom: 8px;
-    border-radius: 10px;
+    background: var(--bg);
     border: 1px solid var(--border);
-    background: var(--surface-2, rgba(255,255,255,0.04));
-    color: inherit;
-    font-size: 0.95rem;
+    color: var(--text);
+    padding: 14px 16px 14px 44px;
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    font-family: var(--font-body);
+    margin-bottom: 12px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ba0b5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: left 16px center;
+    transition: border-color 0.2s;
 }
-.search-input:focus {
-    outline: none;
-    border-color: var(--accent-2, #7c5cff);
-    box-shadow: 0 0 0 3px rgba(124, 92, 255, 0.25);
-}
+.search-input::placeholder { color: var(--text-faint); }
+.search-input:focus { outline: none; border-color: var(--accent); }
 
 /* Balotas (Baloto) */
 .balls-grid {
