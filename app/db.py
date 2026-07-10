@@ -108,11 +108,15 @@ def upsert_draw(draw: Draw, db_path: Path | str | None = None) -> bool:
 
 
 def upsert_many(draws: list[Draw], db_path: Path | str | None = None) -> int:
-    """Inserta varios sorteos de forma idempotente. Devuelve cuántos eran nuevos."""
+    """Inserta varios sorteos de forma idempotente. Devuelve cuántos eran nuevos.
+
+    Cuenta filas antes/después por lotería en vez de fiarse de ``rowcount``, que en
+    Postgres con ``ON CONFLICT DO NOTHING`` puede devolver -1 (desconocido).
+    """
     if not draws:
         return 0
     engine = _get_engine(db_path)
-    inserted = 0
+    affected = {slug: count_draws(slug, db_path) for slug in {d.lottery for d in draws}}
     with engine.begin() as conn:
         for draw in draws:
             row = {
@@ -121,8 +125,10 @@ def upsert_many(draws: list[Draw], db_path: Path | str | None = None) -> int:
                 "numbers": draw.numbers,
                 "source": draw.source,
             }
-            result = conn.execute(_upsert_stmt(engine, [row]))
-            inserted += result.rowcount or 0
+            conn.execute(_upsert_stmt(engine, [row]))
+    inserted = sum(
+        count_draws(slug, db_path) - before for slug, before in affected.items()
+    )
     return inserted
 
 
